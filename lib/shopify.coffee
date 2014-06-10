@@ -19,6 +19,7 @@ class Shopify
     obj_key = if last_ctl[last] is 's' then last_ctl.slice(0,last) else last_ctl
     obj_key
     
+  # TODO: Add allowed-actions args to prevent calls to unpublished API endpoints
   appendController: (name, id) =>
     @action = null
     
@@ -26,36 +27,47 @@ class Shopify
       @controllers.push name
     
     if id then @controllers.push id
-    console.log "@Controllers: ", @controllers
+    
     this
     
   fetch: (method, options) ->
-    path = '/' + @controllers.join('/')
+    path = '/admin/' + @controllers.join('/')
     path += if @action then "/#{@action}.json" else ".json"
     @path = path
     [@controllers, @action] = [[], null]
-    @call method, @path, options
-  
-  # Override the HTTPS.call methods and 
+    @response = @call method, @path, options
+    this
+    
   call: (method, path, options, asyncCallback) ->
     
-    # Append the Host name
+    # Append the Host name and SSL
     url = "https://#{@host}#{path}"
     
     options ||= {}
     options.auth ||= "#{@api_key}:#{@pass}"
     
-    @response = HTTP.call method, url, options, asyncCallback
-    this
+    HTTP.call method, url, options, asyncCallback
   
   # 
   # Controllers
   # 
-  products : (id) =>
+  products: (id) =>
     @appendController('products', id)
 
-  orders : (id) =>
+  orders: (id) =>
     @appendController('orders', id)
+
+  checkouts: () =>
+    @appendController('checkouts')
+
+  blogs: (id) =>
+    @appendController('blogs', id)
+
+  articles: (id) =>
+    @appendController('articles', id)
+
+  customers: (id) =>
+    @appendController('customers', id)
 
   # 
   # Actions
@@ -92,4 +104,18 @@ class Shopify
     @action = id
     @fetch 'DELETE'
 
+  search: (params) ->
+    @action = 'search'
+    @fetch 'GET', params: params
+  
+  #
+  # Misc Actions
+  #
+  tags: ->
+    @action = 'tags'
+    @fetch 'GET'
+  
+  authors: ->
+    @action = 'tags'
+    @fetch 'GET'
     
